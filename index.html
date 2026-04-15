@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Junrui Wang — Portfolio</title>
+  <meta name="description" content="Technical Product Manager (Engineering Infra) — Junrui Wang" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            canvas: '#1a202c',
+            surface: '#252d3d',
+            accent: '#38bdf8',
+            muted: '#94a3b8',
+          },
+          fontFamily: {
+            sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    html { scroll-behavior: smooth; }
+    .grid-bg {
+      background-image:
+        linear-gradient(rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#1a202c] text-slate-200 antialiased selection:bg-sky-500/30 selection:text-white">
+  <div class="pointer-events-none fixed inset-0 grid-bg opacity-60" aria-hidden="true"></div>
+  <div class="pointer-events-none fixed inset-0 bg-gradient-to-b from-sky-950/20 via-transparent to-[#1a202c]" aria-hidden="true"></div>
+
+  <main class="relative z-10 mx-auto max-w-5xl px-5 pb-24 pt-16 sm:px-8 sm:pt-24">
+    <!-- Hero -->
+    <header class="mb-20 sm:mb-28">
+      <p class="mb-3 font-mono text-xs uppercase tracking-[0.2em] text-sky-400/90">Portfolio</p>
+      <h1 class="mb-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl md:text-6xl">
+        Junrui Wang
+      </h1>
+      <p class="mb-8 max-w-2xl text-lg text-slate-300 sm:text-xl">
+        Technical Product Manager
+        <span class="text-slate-500">·</span>
+        <span class="text-slate-400">Engineering Infra</span>
+      </p>
+      <blockquote class="relative border-l-2 border-sky-500/50 pl-5 text-base leading-relaxed text-slate-400 sm:text-lg">
+        <span class="absolute -left-1 top-0 h-full w-px bg-gradient-to-b from-sky-400/0 via-sky-400/40 to-sky-400/0" aria-hidden="true"></span>
+        以数据与平台化手段驱动基础设施演进，在稳定性、交付效率与组织协同之间建立可衡量的闭环。
+      </blockquote>
+    </header>
+
+    <!-- Core metrics -->
+    <section class="mb-20 sm:mb-24" aria-labelledby="metrics-heading">
+      <h2 id="metrics-heading" class="mb-8 font-mono text-sm uppercase tracking-widest text-slate-500">
+        Impact
+      </h2>
+      <div class="grid gap-4 sm:grid-cols-3">
+        <article class="group rounded-xl border border-white/5 bg-[#252d3d]/80 p-6 shadow-lg shadow-black/20 backdrop-blur-sm transition duration-300 ease-out hover:scale-[1.03] hover:border-sky-500/20 hover:shadow-sky-900/20">
+          <p class="mb-2 font-mono text-3xl font-semibold tabular-nums text-sky-400 sm:text-4xl">91.6%</p>
+          <p class="text-sm font-medium text-slate-200">故障率压降</p>
+          <p class="mt-2 text-xs text-slate-500">Fault rate reduction</p>
+        </article>
+        <article class="group rounded-xl border border-white/5 bg-[#252d3d]/80 p-6 shadow-lg shadow-black/20 backdrop-blur-sm transition duration-300 ease-out hover:scale-[1.03] hover:border-sky-500/20 hover:shadow-sky-900/20">
+          <p class="mb-2 font-mono text-3xl font-semibold tabular-nums text-sky-400 sm:text-4xl">96.1%</p>
+          <p class="text-sm font-medium text-slate-200">Downtime 缩减</p>
+          <p class="mt-2 text-xs text-slate-500">Downtime reduction</p>
+        </article>
+        <article class="group rounded-xl border border-white/5 bg-[#252d3d]/80 p-6 shadow-lg shadow-black/20 backdrop-blur-sm transition duration-300 ease-out hover:scale-[1.03] hover:border-sky-500/20 hover:shadow-sky-900/20">
+          <p class="mb-2 font-mono text-3xl font-semibold tabular-nums text-sky-400 sm:text-4xl">92%</p>
+          <p class="text-sm font-medium text-slate-200">P0 接入率</p>
+          <p class="mt-2 text-xs text-slate-500">P0 adoption</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Projects -->
+    <section class="mb-20 sm:mb-24" aria-labelledby="projects-heading">
+      <h2 id="projects-heading" class="mb-8 font-mono text-sm uppercase tracking-widest text-slate-500">
+        Selected work
+      </h2>
+      <div class="flex flex-col gap-5">
+        <article class="rounded-xl border border-white/5 bg-[#252d3d]/60 p-6 transition duration-300 ease-out hover:scale-[1.02] hover:border-white/10 sm:p-8">
+          <div class="mb-4 flex flex-wrap items-baseline gap-2">
+            <h3 class="text-xl font-semibold text-white">Infra Release System</h3>
+            <span class="font-mono text-xs text-sky-400/80">Release &amp; governance</span>
+          </div>
+          <p class="mb-5 text-sm leading-relaxed text-slate-400">
+            从流程标准化到能力扩展，再到智能化辅助决策，持续降低发布风险与人工摩擦。
+          </p>
+          <ol class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2 sm:text-sm">
+            <li class="flex items-center gap-2 rounded-lg bg-black/20 px-3 py-2 font-mono text-xs text-slate-300">
+              <span class="text-sky-500">01</span> Standardization
+            </li>
+            <li class="hidden text-slate-600 sm:block" aria-hidden="true">→</li>
+            <li class="flex items-center gap-2 rounded-lg bg-black/20 px-3 py-2 font-mono text-xs text-slate-300">
+              <span class="text-sky-500">02</span> Expansion
+            </li>
+            <li class="hidden text-slate-600 sm:block" aria-hidden="true">→</li>
+            <li class="flex items-center gap-2 rounded-lg bg-black/20 px-3 py-2 font-mono text-xs text-slate-300">
+              <span class="text-sky-500">03</span> AI Intelligence
+            </li>
+          </ol>
+        </article>
+
+        <article class="rounded-xl border border-white/5 bg-[#252d3d]/60 p-6 transition duration-300 ease-out hover:scale-[1.02] hover:border-white/10 sm:p-8">
+          <div class="mb-4 flex flex-wrap items-baseline gap-2">
+            <h3 class="text-xl font-semibold text-white">SDP (CI/CD) Platform</h3>
+            <span class="font-mono text-xs text-sky-400/80">Delivery pipeline</span>
+          </div>
+          <p class="text-sm leading-relaxed text-slate-400">
+            构建可编排的 CI/CD 能力，支持 <strong class="font-medium text-slate-200">Group Deployment</strong> 联动部署，在多团队、多环境场景下保持发布节奏一致与可追溯。
+          </p>
+        </article>
+
+        <article class="rounded-xl border border-white/5 bg-[#252d3d]/60 p-6 transition duration-300 ease-out hover:scale-[1.02] hover:border-white/10 sm:p-8">
+          <div class="mb-4 flex flex-wrap items-baseline gap-2">
+            <h3 class="text-xl font-semibold text-white">OKR Management Tool</h3>
+            <span class="font-mono text-xs text-sky-400/80">Org effectiveness</span>
+          </div>
+          <p class="text-sm leading-relaxed text-slate-400">
+            将目标、进展与依赖关系数字化，提升跨团队对齐效率与组织效能的可视化程度。
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Contact -->
+    <footer class="rounded-xl border border-white/5 bg-[#252d3d]/40 p-8 backdrop-blur-sm" id="contact">
+      <h2 class="mb-6 font-mono text-sm uppercase tracking-widest text-slate-500">Contact</h2>
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-10">
+        <a
+          href="https://github.com/JunruiWang-1"
+          class="group inline-flex items-center gap-2 font-mono text-sm text-sky-400 transition hover:text-sky-300"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span class="text-slate-500 transition group-hover:text-slate-400">GitHub</span>
+          github.com/JunruiWang-1
+          <span class="translate-x-0 transition group-hover:translate-x-0.5" aria-hidden="true">↗</span>
+        </a>
+        <a
+          href="mailto:anderiawang@126.com"
+          class="group inline-flex items-center gap-2 font-mono text-sm text-slate-300 transition hover:text-white"
+        >
+          <span class="text-slate-500">Email</span>
+          anderiawang@126.com
+        </a>
+      </div>
+      <p class="mt-8 text-center text-xs text-slate-600 sm:text-left">
+        © <span id="y"></span> Junrui Wang
+      </p>
+    </footer>
+  </main>
+  <script>
+    document.getElementById('y').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
