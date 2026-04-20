@@ -1,1 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guardian Release System — Case Study</title>
+  <meta name="description" content="Guardian Release System — interactive portfolio demo" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"IBM Plex Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
+          },
+          colors: {
+            void: '#0b0f14',
+            panel: '#12181f',
+            line: 'rgba(148, 163, 184, 0.12)',
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    html { scroll-behavior: smooth; }
+    .scanlines {
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.12) 2px,
+        rgba(0, 0, 0, 0.12) 4px
+      );
+    }
+    .grid-tech {
+      background-image:
+        linear-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 189, 248, 0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#0b0f14] text-slate-200 antialiased selection:bg-cyan-500/25 selection:text-white">
+  <div class="pointer-events-none fixed inset-0 grid-tech opacity-50" aria-hidden="true"></div>
+  <div class="pointer-events-none fixed inset-0 scanlines opacity-30" aria-hidden="true"></div>
+  <div class="pointer-events-none fixed inset-0 bg-gradient-to-b from-cyan-950/25 via-transparent to-[#0b0f14]" aria-hidden="true"></div>
 
+  <div id="root"></div>
+
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function useAnimatedMetric(target, durationMs, formatter) {
+      const [value, setValue] = useState(0);
+      const startRef = useRef(null);
+      const frameRef = useRef(null);
+
+      useEffect(() => {
+        startRef.current = null;
+        const step = (ts) => {
+          if (startRef.current === null) startRef.current = ts;
+          const p = Math.min(1, (ts - startRef.current) / durationMs);
+          setValue(target * easeOutCubic(p));
+          if (p < 1) frameRef.current = requestAnimationFrame(step);
+        };
+        frameRef.current = requestAnimationFrame(step);
+        return () => cancelAnimationFrame(frameRef.current);
+      }, [target, durationMs]);
+
+      return formatter ? formatter(value) : value;
+    }
+
+    function MetricPanel() {
+      const fmtFault = useAnimatedMetric(-91.6, 1800, (v) => `${v.toFixed(1)}%`);
+      const fmtDown = useAnimatedMetric(96.1, 2000, (v) => `${v.toFixed(1)}%`);
+      const fmtP0 = useAnimatedMetric(92, 1700, (v) => `${Math.round(v)}%`);
+
+      const cards = [
+        { label: '故障率（同比）', sub: 'Fault rate delta', value: fmtFault, accent: 'text-rose-400' },
+        { label: 'Downtime 缩减', sub: 'Downtime reduction', value: fmtDown, accent: 'text-cyan-400' },
+        { label: 'P0 接入率', sub: 'Critical-path coverage', value: fmtP0, accent: 'text-emerald-400' },
+      ];
+
+      return (
+        <section className="mb-10" aria-labelledby="metrics-title">
+          <h2 id="metrics-title" className="mb-4 font-mono text-[11px] uppercase tracking-[0.25em] text-slate-500">
+            Metric panel
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {cards.map((c) => (
+              <div
+                key={c.label}
+                className="rounded-lg border border-white/[0.06] bg-[#12181f]/90 px-5 py-4 shadow-[0_0_0_1px_rgba(34,211,238,0.04)] backdrop-blur-sm transition duration-300 hover:border-cyan-500/20 hover:shadow-[0_0_24px_-8px_rgba(34,211,238,0.35)]"
+              >
+                <p className={`mb-1 font-mono text-3xl font-semibold tabular-nums tracking-tight sm:text-4xl ${c.accent}`}>
+                  {c.value}
+                </p>
+                <p className="text-sm font-medium text-slate-200">{c.label}</p>
+                <p className="mt-1 text-[11px] text-slate-500">{c.sub}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    const SERVICES = [
+      { id: 'api-edge', label: 'api-edge' },
+      { id: 'checkout-core', label: 'checkout-core' },
+      { id: 'identity-svc', label: 'identity-svc' },
+      { id: 'data-pipeline', label: 'data-pipeline' },
+    ];
+
+    const RELEASE_TYPES = ['Canary', 'Rolling', 'Blue-Green'];
+
+    function InteractiveSimulator() {
+      const [service, setService] = useState(SERVICES[0].id);
+      const [releaseType, setReleaseType] = useState(RELEASE_TYPES[0]);
+      const [logs, setLogs] = useState([]);
+      const logEndRef = useRef(null);
+
+      const appendLog = useCallback((line) => {
+        const ts = new Date().toISOString().split('T')[1].replace('Z', '').slice(0, 12);
+        setLogs((prev) => [...prev, `[${ts}] ${line}`]);
+      }, []);
+
+      useEffect(() => {
+        logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, [logs]);
+
+      const runSimulation = () => {
+        appendLog(`Job queued · service=${service} · strategy=${releaseType}`);
+        const steps = [
+          () => appendLog('Scanning security vulnerabilities...'),
+          () => appendLog('Policy gate: artifact signature OK'),
+          () => appendLog(`AI Risk score: ${(Math.random() * 0.08 + 0.01).toFixed(2)}`),
+          () => appendLog('Synthetic probe: latency p99 within SLO'),
+          () => appendLog('Drift check: config hash matches manifest'),
+          () => appendLog('Simulation complete · no blocking findings'),
+        ];
+        let i = 0;
+        const tick = () => {
+          if (i >= steps.length) return;
+          steps[i]();
+          i += 1;
+          setTimeout(tick, 420 + Math.random() * 380);
+        };
+        setTimeout(tick, 200);
+      };
+
+      const clearConsole = () => setLogs([]);
+
+      return (
+        <section className="mb-10" aria-labelledby="sim-title">
+          <h2 id="sim-title" className="mb-4 font-mono text-[11px] uppercase tracking-[0.25em] text-slate-500">
+            Interactive simulator
+          </h2>
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,280px)_1fr]">
+            <div className="rounded-lg border border-white/[0.06] bg-[#12181f]/90 p-4">
+              <p className="mb-3 font-mono text-[10px] uppercase tracking-wider text-slate-500">Input</p>
+              <label className="mb-3 block">
+                <span className="mb-1 block text-xs text-slate-400">Service</span>
+                <select
+                  value={service}
+                  onChange={(e) => setService(e.target.value)}
+                  className="w-full rounded border border-white/10 bg-black/40 px-3 py-2 font-mono text-sm text-slate-200 outline-none ring-cyan-500/40 focus:ring-2"
+                >
+                  {SERVICES.map((s) => (
+                    <option key={s.id} value={s.id}>{s.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="mb-4 block">
+                <span className="mb-1 block text-xs text-slate-400">Release type</span>
+                <select
+                  value={releaseType}
+                  onChange={(e) => setReleaseType(e.target.value)}
+                  className="w-full rounded border border-white/10 bg-black/40 px-3 py-2 font-mono text-sm text-slate-200 outline-none ring-cyan-500/40 focus:ring-2"
+                >
+                  {RELEASE_TYPES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={runSimulation}
+                className="w-full rounded border border-cyan-500/35 bg-cyan-950/40 px-3 py-2 font-mono text-xs font-medium uppercase tracking-wider text-cyan-200 transition hover:border-cyan-400/60 hover:bg-cyan-900/50"
+              >
+                Run pipeline check
+              </button>
+            </div>
+
+            <div className="flex min-h-[280px] flex-col rounded-lg border border-white/[0.06] bg-black/50">
+              <div className="flex items-center justify-between border-b border-white/[0.06] px-3 py-2">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">Console</span>
+                <button
+                  type="button"
+                  onClick={clearConsole}
+                  className="font-mono text-[10px] text-slate-500 underline-offset-2 hover:text-slate-300 hover:underline"
+                >
+                  clear
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-3 font-mono text-[11px] leading-relaxed text-slate-300 sm:text-xs">
+                {logs.length === 0 && (
+                  <p className="text-slate-600">// Awaiting run — output streams here.</p>
+                )}
+                {logs.map((line, idx) => (
+                  <div key={idx} className="border-l border-transparent py-0.5 pl-2 hover:border-cyan-500/40">
+                    {line}
+                  </div>
+                ))}
+                <div ref={logEndRef} />
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function CanaryProgress() {
+      const [progress, setProgress] = useState([0, 0, 0]);
+      const [phase, setPhase] = useState('idle');
+      const [hookMessage, setHookMessage] = useState('');
+      const rafRef = useRef(null);
+      const activeBatchRef = useRef(0);
+
+      const clearRaf = () => {
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      };
+
+      const runBatch = (batchIndex, from, to, onDone) => {
+        const start = performance.now();
+        const dur = 1400;
+        const tick = (now) => {
+          const p = Math.min(1, (now - start) / dur);
+          const eased = easeOutCubic(p);
+          const v = from + (to - from) * eased;
+          setProgress((prev) => {
+            const next = [...prev];
+            next[batchIndex] = v;
+            return next;
+          });
+          if (p < 1) {
+            rafRef.current = requestAnimationFrame(tick);
+          } else {
+            onDone?.();
+          }
+        };
+        rafRef.current = requestAnimationFrame(tick);
+      };
+
+      const startDemo = () => {
+        clearRaf();
+        setHookMessage('');
+        setProgress([0, 0, 0]);
+        setPhase('batch1');
+        activeBatchRef.current = 0;
+        runBatch(0, 0, 100, () => {
+          setPhase('paused_hook');
+          setHookMessage('Waiting for Hook check');
+        });
+      };
+
+      const resumeAfterHook = () => {
+        if (phase !== 'paused_hook') return;
+        setHookMessage('');
+        setPhase('batch23');
+        runBatch(1, 0, 100, () => {
+          runBatch(2, 0, 100, () => {
+            setPhase('done');
+          });
+        });
+      };
+
+      const resetDemo = () => {
+        clearRaf();
+        setProgress([0, 0, 0]);
+        setPhase('idle');
+        setHookMessage('');
+      };
+
+      useEffect(() => () => clearRaf(), []);
+
+      const batches = [
+        { n: 1, label: 'Batch 01 · edge slice' },
+        { n: 2, label: 'Batch 02 · regional pool' },
+        { n: 3, label: 'Batch 03 · remainder' },
+      ];
+
+      return (
+        <section className="mb-6" aria-labelledby="canary-title">
+          <h2 id="canary-title" className="mb-4 font-mono text-[11px] uppercase tracking-[0.25em] text-slate-500">
+            Canary progress
+          </h2>
+          <div className="rounded-lg border border-white/[0.06] bg-[#12181f]/90 p-4">
+            <div className="mb-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={startDemo}
+                disabled={phase === 'batch1' || phase === 'batch23' || phase === 'paused_hook'}
+                className="rounded border border-white/10 bg-white/[0.04] px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-slate-200 transition enabled:hover:border-cyan-500/40 enabled:hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Start canary demo
+              </button>
+              <button
+                type="button"
+                onClick={resetDemo}
+                className="rounded border border-white/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-slate-500 transition hover:border-slate-500 hover:text-slate-300"
+              >
+                Reset
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {batches.map((b, i) => (
+                <div key={b.n}>
+                  <div className="mb-1 flex justify-between font-mono text-[10px] text-slate-500">
+                    <span>{b.label}</span>
+                    <span className="tabular-nums text-cyan-500/90">{Math.round(progress[i])}%</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-sm bg-black/60 ring-1 ring-inset ring-white/[0.06]">
+                    <div
+                      className="h-full rounded-sm bg-gradient-to-r from-cyan-600/80 to-emerald-500/70 transition-[width] duration-75"
+                      style={{ width: `${progress[i]}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {hookMessage && (
+              <div className="mt-4 flex flex-col gap-3 rounded border border-amber-500/25 bg-amber-950/20 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="font-mono text-xs text-amber-200/95">
+                  <span className="text-amber-500/80">⚠</span> {hookMessage}
+                </p>
+                <button
+                  type="button"
+                  onClick={resumeAfterHook}
+                  className="shrink-0 rounded border border-amber-400/40 bg-amber-950/40 px-3 py-1.5 font-mono text-[10px] font-medium uppercase tracking-wider text-amber-100 transition hover:border-amber-300/60 hover:bg-amber-900/50"
+                >
+                  Continue rollout
+                </button>
+              </div>
+            )}
+
+            {phase === 'done' && (
+              <p className="mt-3 font-mono text-[11px] text-emerald-400/90">All batches complete · rollout closed.</p>
+            )}
+          </div>
+        </section>
+      );
+    }
+
+    function AppHeader() {
+      return (
+        <header className="mb-10 border-b border-white/[0.06] pb-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.35em] text-cyan-500/80">Case study</p>
+              <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                Guardian Release System
+              </h1>
+              <p className="mt-2 max-w-xl text-sm text-slate-500">
+                Interactive demo — release governance, risk signals, and staged rollout visualization.
+              </p>
+            </div>
+            <span className="inline-flex w-fit items-center rounded border border-cyan-500/25 bg-cyan-950/30 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-cyan-300/90">
+              Junrui&apos;s Portfolio Case Study
+            </span>
+          </div>
+        </header>
+      );
+    }
+
+    function App() {
+      return (
+        <main className="relative z-10 mx-auto max-w-4xl px-4 pb-20 pt-12 sm:px-6 sm:pt-16">
+          <AppHeader />
+          <MetricPanel />
+          <InteractiveSimulator />
+          <CanaryProgress />
+          <footer className="mt-12 border-t border-white/[0.06] pt-6 text-center font-mono text-[10px] text-slate-600 sm:text-left">
+            Guardian Release System · portfolio prototype · {new Date().getFullYear()}
+          </footer>
+        </main>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

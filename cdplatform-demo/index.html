@@ -1,1 +1,361 @@
+<<<<<<< HEAD
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Space CI/CD Platform — Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+            sans: ['"Inter"', 'system-ui', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    @keyframes pulse-ring {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.35); }
+      50% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+    }
+    .stage-active { animation: pulse-ring 1.2s ease-in-out infinite; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-200 antialiased">
+  <div id="root"></div>
 
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    const PIPELINE_STAGES = [
+      { id: 'build', label: 'Build' },
+      { id: 'test', label: 'Unit Test' },
+      { id: 'artifact', label: 'Artifact' },
+      { id: 'deploy', label: 'Deploy' },
+    ];
+
+    const SERVICES = [
+      { id: 'auth', name: 'Auth-Service', tier: 1 },
+      { id: 'payment', name: 'Payment-Gateway', tier: 2 },
+      { id: 'order', name: 'Order-Engine', tier: 2 },
+    ];
+
+    const ENV_CONFIG = {
+      production: {
+        label: 'Production',
+        lines: [
+          'cluster: prod-space-01',
+          'replicas_min: 3 · max: 12',
+          'traffic: 100% · region: global',
+          'feature_flags: stable_bundle',
+        ],
+      },
+      staging: {
+        label: 'Staging',
+        lines: [
+          'cluster: stg-space-shared',
+          'replicas_min: 2 · max: 4',
+          'traffic: internal · rbac: team-scope',
+          'feature_flags: next_candidate',
+        ],
+      },
+      canary: {
+        label: 'Canary',
+        lines: [
+          'cluster: prod-space-01 · slice: canary',
+          'weight: 5% · baseline: production',
+          'replicas: 1 · auto_promote: off',
+          'rollback_window: 15m',
+        ],
+      },
+    };
+
+    function PipelinePanel({ activeStageIndex }) {
+      return (
+        <section className="mb-8 rounded-xl border border-slate-800 bg-slate-900/80 p-4 sm:p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Pipeline
+            </h2>
+            <span className="font-mono text-[10px] text-slate-600">Build → Ship</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-0">
+            {PIPELINE_STAGES.map((stage, i) => (
+              <div key={stage.id} className="flex items-center">
+                <div
+                  className={[
+                    'flex min-w-[5.5rem] flex-col items-center rounded-lg border px-3 py-2.5 transition-all duration-300 sm:min-w-[6.5rem]',
+                    activeStageIndex === i
+                      ? 'stage-active border-blue-500/80 bg-blue-950/60 text-blue-100'
+                      : activeStageIndex >= 0 && i < activeStageIndex
+                        ? 'border-emerald-800/80 bg-emerald-950/40 text-emerald-200'
+                        : 'border-slate-700 bg-slate-950/80 text-slate-400',
+                  ].join(' ')}
+                >
+                  <span className="font-mono text-[10px] text-slate-500">stage {i + 1}</span>
+                  <span className="mt-0.5 font-mono text-xs font-medium">{stage.label}</span>
+                </div>
+                {i < PIPELINE_STAGES.length - 1 && (
+                  <div
+                    className={[
+                      'mx-1 hidden h-px w-6 sm:mx-2 sm:block',
+                      i < activeStageIndex ? 'bg-emerald-600' : 'bg-slate-700',
+                    ].join(' ')}
+                    aria-hidden
+                  />
+                )}
+                {i < PIPELINE_STAGES.length - 1 && (
+                  <span className="mx-1 font-mono text-slate-600 sm:hidden">→</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    function EnvBoard({ env, onChange }) {
+      const keys = Object.keys(ENV_CONFIG);
+      return (
+        <section className="mb-8 rounded-xl border border-slate-800 bg-slate-900/80 p-4 sm:p-6">
+          <h2 className="mb-3 font-mono text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Environment
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {keys.map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => onChange(k)}
+                className={[
+                  'rounded-lg border px-3 py-2 font-mono text-xs transition',
+                  env === k
+                    ? 'border-violet-500/80 bg-violet-950/50 text-violet-100'
+                    : 'border-slate-700 bg-slate-950 text-slate-400 hover:border-slate-500',
+                ].join(' ')}
+              >
+                {ENV_CONFIG[k].label}
+              </button>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    function GroupDeployPanel({
+      progress,
+      deployStatus,
+      onExecute,
+      disabled,
+    }) {
+      return (
+        <section className="mb-8 rounded-xl border border-slate-800 bg-slate-900/80 p-4 sm:p-6">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Group deployment
+            </h2>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={onExecute}
+              className="rounded-lg border border-blue-600/60 bg-blue-950/50 px-4 py-2 font-mono text-xs font-medium uppercase tracking-wider text-blue-100 transition hover:bg-blue-900/60 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Execute Group Deploy
+            </button>
+          </div>
+          <ul className="space-y-4">
+            {SERVICES.map((s) => (
+              <li key={s.id}>
+                <div className="mb-1 flex justify-between font-mono text-xs">
+                  <span className="text-slate-300">{s.name}</span>
+                  <span className="text-slate-500">tier {s.tier}</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded bg-slate-800">
+                  <div
+                    className={[
+                      'h-full rounded transition-[width] duration-100 ease-linear',
+                      s.id === 'auth' ? 'bg-gradient-to-r from-blue-600 to-cyan-500' : 'bg-gradient-to-r from-violet-600 to-fuchsia-500',
+                    ].join(' ')}
+                    style={{ width: `${progress[s.id]}%` }}
+                  />
+                </div>
+                <p className="mt-0.5 text-right font-mono text-[10px] tabular-nums text-slate-500">
+                  {Math.round(progress[s.id])}%
+                </p>
+              </li>
+            ))}
+          </ul>
+          {deployStatus === 'done' && (
+            <p className="mt-4 font-mono text-xs text-emerald-400/90">Group deploy finished · all targets healthy.</p>
+          )}
+        </section>
+      );
+    }
+
+    function LogPanel({ lines }) {
+      const endRef = useRef(null);
+      useEffect(() => {
+        endRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, [lines]);
+
+      return (
+        <section className="rounded-xl border border-slate-800 bg-black/50 p-4 sm:p-6">
+          <h2 className="mb-3 font-mono text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Event log
+          </h2>
+          <div className="max-h-56 overflow-y-auto font-mono text-[11px] leading-relaxed text-slate-400 sm:text-xs">
+            {lines.length === 0 && <p className="text-slate-600">// No events yet.</p>}
+            {lines.map((line, i) => (
+              <div key={i} className="border-b border-slate-800/50 py-1 last:border-0">
+                {line}
+              </div>
+            ))}
+            <div ref={endRef} />
+          </div>
+        </section>
+      );
+    }
+
+    function App() {
+      const [env, setEnv] = useState('production');
+      const [logs, setLogs] = useState([]);
+      const [pipelineStage, setPipelineStage] = useState(-1);
+      const [progress, setProgress] = useState({ auth: 0, payment: 0, order: 0 });
+      const [deployStatus, setDeployStatus] = useState('idle');
+      const timersRef = useRef([]);
+
+      const pushLog = useCallback((msg) => {
+        const ts = new Date().toISOString().split('T')[1].replace('Z', '').slice(0, 12);
+        setLogs((prev) => [...prev, `[${ts}] ${msg}`]);
+      }, []);
+
+      const clearTimers = () => {
+        timersRef.current.forEach(clearTimeout);
+        timersRef.current = [];
+      };
+
+      useEffect(() => () => clearTimers(), []);
+
+      const handleEnvChange = (next) => {
+        setEnv(next);
+        const cfg = ENV_CONFIG[next];
+        pushLog(`Environment → ${cfg.label}`);
+        cfg.lines.forEach((line, i) => {
+          timersRef.current.push(
+            setTimeout(() => pushLog(`  · ${line}`), 80 * (i + 1)),
+          );
+        });
+      };
+
+      const runPipelineSweep = () =>
+        new Promise((resolve) => {
+          let i = 0;
+          const step = () => {
+            setPipelineStage(i);
+            if (i >= PIPELINE_STAGES.length - 1) {
+              timersRef.current.push(setTimeout(resolve, 280));
+              return;
+            }
+            i += 1;
+            timersRef.current.push(setTimeout(step, 320));
+          };
+          step();
+        });
+
+      const animateProgress = (key, from, to, durationMs) =>
+        new Promise((resolve) => {
+          const start = performance.now();
+          const tick = (now) => {
+            const p = Math.min(1, (now - start) / durationMs);
+            const eased = 1 - Math.pow(1 - p, 2);
+            const val = from + (to - from) * eased;
+            setProgress((prev) => ({ ...prev, [key]: val }));
+            if (p < 1) requestAnimationFrame(tick);
+            else {
+              setProgress((prev) => ({ ...prev, [key]: to }));
+              resolve();
+            }
+          };
+          requestAnimationFrame(tick);
+        });
+
+      const handleGroupDeploy = async () => {
+        if (deployStatus === 'running') return;
+        clearTimers();
+        setDeployStatus('running');
+        setProgress({ auth: 0, payment: 0, order: 0 });
+        setPipelineStage(-1);
+
+        const envLabel = ENV_CONFIG[env].label;
+        pushLog(`── Group deploy requested · target=${envLabel} ──`);
+
+        await runPipelineSweep();
+        pushLog('Pipeline stages complete · scheduling service rollout…');
+
+        pushLog('Tier 1: Auth-Service (serial gate)');
+        await animateProgress('auth', 0, 100, 1400);
+        pushLog('Auth-Service · deploy OK · releasing tier-2 wave');
+
+        pushLog('Tier 2: Payment-Gateway & Order-Engine (parallel)');
+        await Promise.all([
+          animateProgress('payment', 0, 100, 1600),
+          animateProgress('order', 0, 100, 1550),
+        ]);
+
+        pushLog(`── Group deploy success · env=${envLabel} ──`);
+        setDeployStatus('done');
+        setPipelineStage(PIPELINE_STAGES.length);
+      };
+
+      useEffect(() => {
+        pushLog(`Space CI/CD · session · initial env=${ENV_CONFIG[env].label}`);
+      }, []);
+
+      return (
+        <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+          <header className="mb-10 border-b border-slate-800 pb-6">
+            <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-blue-400/80">Interactive demo</p>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+              Space CI/CD Platform
+            </h1>
+            <p className="mt-2 max-w-xl text-sm text-slate-500">
+              Pipeline graph, ordered + concurrent group rollout, environment-scoped config stream.
+            </p>
+          </header>
+
+          <PipelinePanel activeStageIndex={pipelineStage} />
+
+          <EnvBoard env={env} onChange={handleEnvChange} />
+
+          <GroupDeployPanel
+            progress={progress}
+            deployStatus={deployStatus}
+            disabled={deployStatus === 'running'}
+            onExecute={handleGroupDeploy}
+          />
+
+          <LogPanel lines={logs} />
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
+=======
+
+>>>>>>> c585d0aaae9e42ef2fc1a513023150c8034390f5
