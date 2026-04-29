@@ -1,18 +1,30 @@
-<<<<<<< HEAD
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Space CI/CD Platform — Demo</title>
+  <title>CD Platform Demo</title>
+  <meta name="description" content="Dark mode CD platform high fidelity prototype" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
+          colors: {
+            ink: '#0b1220',
+            panel: '#111827',
+            panel2: '#172033',
+            line: '#243042',
+            soft: '#8fa2bd',
+            brand: '#2f6fed',
+            brand2: '#4d8dff',
+          },
+          boxShadow: {
+            glow: '0 0 0 1px rgba(77,141,255,.22), 0 22px 60px rgba(5,13,27,.45)',
+          },
           fontFamily: {
-            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
             sans: ['"Inter"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
           },
         },
       },
@@ -22,340 +34,659 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <style>
-    @keyframes pulse-ring {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.35); }
-      50% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+    html { color-scheme: dark; }
+    body {
+      background:
+        radial-gradient(circle at top, rgba(47,111,237,.16), transparent 32%),
+        linear-gradient(180deg, #09111f 0%, #0b1220 100%);
     }
-    .stage-active { animation: pulse-ring 1.2s ease-in-out infinite; }
+    .grid-mask {
+      background-image:
+        linear-gradient(rgba(143, 162, 189, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(143, 162, 189, 0.06) 1px, transparent 1px);
+      background-size: 36px 36px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.5), transparent 70%);
+    }
+    .tab-active {
+      color: #f8fbff;
+      border-color: #4d8dff;
+      background: linear-gradient(180deg, rgba(47,111,237,.18), rgba(47,111,237,.05));
+      box-shadow: inset 0 -1px 0 rgba(77,141,255,.45);
+    }
+    .panel {
+      background: linear-gradient(180deg, rgba(17,24,39,.92), rgba(12,19,32,.92));
+      border: 1px solid rgba(143,162,189,.14);
+      box-shadow: 0 18px 40px rgba(0,0,0,.22);
+    }
+    .pill {
+      border: 1px solid rgba(143,162,189,.2);
+      background: rgba(10,17,30,.84);
+    }
+    .status-running { color: #7db2ff; border-color: rgba(77,141,255,.45); background: rgba(47,111,237,.16); }
+    .status-aborted { color: #d0d6e0; border-color: rgba(148,163,184,.25); background: rgba(100,116,139,.16); }
+    .status-failure { color: #ff9b97; border-color: rgba(248,113,113,.34); background: rgba(127,29,29,.18); }
+    .status-finished { color: #9ee58d; border-color: rgba(74,222,128,.28); background: rgba(20,83,45,.2); }
+    .toggle-dot { transition: transform .18s ease; }
+    .toggle-on .toggle-dot { transform: translateX(18px); }
+    .toggle-on { background: rgba(47,111,237,.45); border-color: rgba(77,141,255,.55); }
+    .overlay-open { opacity: 1; pointer-events: auto; }
+    .drawer-open { transform: translateX(0); }
+    .modal-open { opacity: 1; transform: translateY(0) scale(1); }
   </style>
 </head>
-<body class="min-h-screen bg-slate-950 text-slate-200 antialiased">
-  <div id="root"></div>
+<body class="min-h-screen text-slate-200 antialiased selection:bg-blue-500/30 selection:text-white">
+  <div class="pointer-events-none fixed inset-0 grid-mask opacity-70" aria-hidden="true"></div>
 
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <div class="relative min-h-screen">
+    <main class="mx-auto min-w-0 max-w-[1600px] px-5 pb-8 pt-6">
+        <section class="border-b border-white/10 bg-slate-950/35 px-5 py-5 backdrop-blur">
+          <div class="flex flex-col gap-4 xl:flex-row xl:items-center">
+            <div class="min-w-0 flex-1">
+              <div class="mb-2 flex items-center gap-3">
+                <a href="../index.html" class="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-lg text-slate-300 transition hover:bg-white/10">←</a>
+                <div>
+                  <p class="text-[11px] uppercase tracking-[0.24em] text-blue-200/55">Service Pipeline Overview</p>
+                  <h1 class="truncate text-2xl font-semibold tracking-tight text-white sm:text-3xl">nebula.engineering_infra.dev_efficiency.cicd.pipeline.starlight</h1>
+                </div>
+              </div>
+              <p class="max-w-4xl text-sm text-slate-400">虚拟服务名替代线上实例，保留截图中的核心信息架构、操作区和流水线查看路径。</p>
+            </div>
+          </div>
+        </section>
 
-  <script type="text/babel">
-    const { useState, useEffect, useRef, useCallback } = React;
+        <section class="px-5 pt-5">
+          <div class="flex flex-wrap gap-2 border-b border-white/10">
+            <button data-main-tab="overview" class="main-tab tab-active -mb-px rounded-t-xl border border-b-0 border-transparent px-4 py-3 text-sm font-medium text-slate-400 transition hover:text-white">Overview</button>
+            <button data-main-tab="deployment-plan" class="main-tab -mb-px rounded-t-xl border border-b-0 border-transparent px-4 py-3 text-sm font-medium text-slate-400 transition hover:text-white">Deployment Plan</button>
+          </div>
+        </section>
 
-    const PIPELINE_STAGES = [
-      { id: 'build', label: 'Build' },
-      { id: 'test', label: 'Unit Test' },
-      { id: 'artifact', label: 'Artifact' },
-      { id: 'deploy', label: 'Deploy' },
-    ];
+        <section id="tab-overview" class="tab-panel space-y-5 px-5 py-5">
+          <div class="panel rounded-2xl p-4">
+            <div class="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end">
+              <label class="space-y-2">
+                <span class="text-sm text-slate-400">Env</span>
+                <button class="flex h-10 w-full items-center justify-between rounded-xl border border-white/10 bg-slate-950/70 px-4 text-sm text-slate-400 transition hover:border-blue-400/40 hover:text-slate-200">
+                  <span>Select env</span>
+                  <span>⌄</span>
+                </button>
+              </label>
+              <label class="space-y-2">
+                <span class="text-sm text-slate-400">Status</span>
+                <button class="flex h-10 w-full items-center justify-between rounded-xl border border-white/10 bg-slate-950/70 px-4 text-sm text-slate-400 transition hover:border-blue-400/40 hover:text-slate-200">
+                  <span>Select status</span>
+                  <span>⌄</span>
+                </button>
+              </label>
+              <label class="space-y-2">
+                <span class="text-sm text-slate-400">Operator</span>
+                <button class="flex h-10 w-full items-center justify-between rounded-xl border border-white/10 bg-slate-950/70 px-4 text-sm text-slate-400 transition hover:border-blue-400/40 hover:text-slate-200">
+                  <span>Select operator</span>
+                  <span>⌄</span>
+                </button>
+              </label>
+              <div class="flex items-end justify-end gap-2">
+                <button class="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-slate-300 transition hover:bg-white/10">Reset</button>
+                <button class="rounded-xl border border-blue-400/20 bg-blue-500/10 px-4 py-2.5 text-sm text-blue-200 transition hover:bg-blue-500/15">Expand</button>
+              </div>
+            </div>
+          </div>
 
-    const SERVICES = [
-      { id: 'auth', name: 'Auth-Service', tier: 1 },
-      { id: 'payment', name: 'Payment-Gateway', tier: 2 },
-      { id: 'order', name: 'Order-Engine', tier: 2 },
-    ];
+          <div class="panel rounded-2xl p-5">
+            <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center">
+              <div class="min-w-0 flex-1">
+                <h2 class="text-xl font-semibold text-white">Deployment History</h2>
+                <div class="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-400">
+                  <span>Total: <strong class="text-slate-200">140</strong></span>
+                  <span>Success: <strong class="text-emerald-300">28.57%</strong></span>
+                  <span>Average: <strong class="text-slate-200">8h 53m 38s</strong></span>
+                  <span>UAT: <strong class="text-slate-200">56</strong></span>
+                  <span>TEST: <strong class="text-slate-200">44</strong></span>
+                  <span>LIVE: <strong class="text-slate-200">40</strong></span>
+                  <span>Last Update: <strong class="text-slate-200">2026-04-29 10:53:42</strong></span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button data-open="run-modal" class="rounded-xl bg-[linear-gradient(180deg,#3b82f6,#2f6fed)] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(47,111,237,.35)] transition hover:brightness-110">Run New Pipeline</button>
+              </div>
+            </div>
 
-    const ENV_CONFIG = {
-      production: {
-        label: 'Production',
-        lines: [
-          'cluster: prod-space-01',
-          'replicas_min: 3 · max: 12',
-          'traffic: 100% · region: global',
-          'feature_flags: stable_bundle',
-        ],
-      },
-      staging: {
-        label: 'Staging',
-        lines: [
-          'cluster: stg-space-shared',
-          'replicas_min: 2 · max: 4',
-          'traffic: internal · rbac: team-scope',
-          'feature_flags: next_candidate',
-        ],
-      },
-      canary: {
-        label: 'Canary',
-        lines: [
-          'cluster: prod-space-01 · slice: canary',
-          'weight: 5% · baseline: production',
-          'replicas: 1 · auto_promote: off',
-          'rollback_window: 15m',
-        ],
-      },
+            <div class="overflow-hidden rounded-2xl border border-white/10">
+              <div class="overflow-x-auto">
+                <table class="min-w-[1280px] w-full text-left text-sm">
+                  <thead class="bg-white/[0.04] text-slate-400">
+                    <tr>
+                      <th class="px-4 py-3 font-medium">Status</th>
+                      <th class="px-4 py-3 font-medium">Env</th>
+                      <th class="px-4 py-3 font-medium">Operator</th>
+                      <th class="px-4 py-3 font-medium">Source</th>
+                      <th class="px-4 py-3 font-medium">CIDs</th>
+                      <th class="px-4 py-3 font-medium">Release Content</th>
+                      <th class="px-4 py-3 font-medium">Duration</th>
+                      <th class="px-4 py-3 font-medium">Triggered At</th>
+                      <th class="px-4 py-3 font-medium">Canary</th>
+                      <th class="px-4 py-3 font-medium">Deploy AZ</th>
+                      <th class="px-4 py-3 font-medium">Options</th>
+                      <th class="px-4 py-3 font-medium">Pipeline Name</th>
+                      <th class="px-4 py-3 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-white/8">
+                    <tr class="bg-white/[0.02] transition hover:bg-white/[0.04]">
+                      <td class="px-4 py-4"><span class="inline-flex rounded-md border px-2 py-1 text-xs font-semibold status-running">RUNNING</span></td>
+                      <td class="px-4 py-4"><span class="inline-flex rounded-md border border-fuchsia-400/35 bg-fuchsia-400/10 px-2 py-1 text-xs text-fuchsia-200">UAT</span></td>
+                      <td class="px-4 py-4">
+                        <div class="flex items-center gap-2">
+                          <span class="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-500/20 text-xs font-semibold text-cyan-200">Z</span>
+                          <span class="text-slate-300">junrui wang</span>
+                        </div>
+                      </td>
+                      <td class="px-4 py-4">
+                        <div class="space-y-1">
+                          <div class="flex gap-2"><span class="pill rounded px-1.5 py-0.5 text-[11px] text-slate-400">Branch</span><span>origin/main</span></div>
+                          <div class="flex gap-2"><span class="pill rounded px-1.5 py-0.5 text-[11px] text-slate-400">Commit</span><span>b44f278f</span></div>
+                          <button class="text-blue-300 transition hover:text-blue-200">Diff</button>
+                        </div>
+                      </td>
+                      <td class="px-4 py-4 text-slate-300">SG</td>
+                      <td class="px-4 py-4 text-slate-500">-</td>
+                      <td class="px-4 py-4 text-slate-300">19h 5m 35s</td>
+                      <td class="px-4 py-4 text-slate-300">2026-04-28 15:48:06</td>
+                      <td class="px-4 py-4 text-slate-300">false</td>
+                      <td class="px-4 py-4 text-slate-300">All</td>
+                      <td class="px-4 py-4 text-slate-300">Build&amp;Deploy</td>
+                      <td class="px-4 py-4 text-slate-300">nebula-pipeline-starlight-uat</td>
+                      <td class="px-4 py-4">
+                        <div class="flex items-center gap-2">
+                          <button data-open="pipeline-drawer" class="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10">View Pipeline</button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="transition hover:bg-white/[0.03]">
+                      <td class="px-4 py-4"><span class="inline-flex rounded-md border px-2 py-1 text-xs font-semibold status-aborted">ABORTED</span></td>
+                      <td class="px-4 py-4"><span class="inline-flex rounded-md border border-fuchsia-400/35 bg-fuchsia-400/10 px-2 py-1 text-xs text-fuchsia-200">UAT</span></td>
+                      <td class="px-4 py-4"><div class="flex items-center gap-2"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-blue-500/25 text-xs font-semibold text-blue-200">J</span><span class="text-slate-300">junrui wang</span></div></td>
+                      <td class="px-4 py-4"><div class="space-y-1"><div class="flex gap-2"><span class="pill rounded px-1.5 py-0.5 text-[11px] text-slate-400">Branch</span><span>origin/main</span></div><div class="flex gap-2"><span class="pill rounded px-1.5 py-0.5 text-[11px] text-slate-400">Commit</span><span>b44f278f</span></div><button class="text-blue-300 transition hover:text-blue-200">Diff</button></div></td>
+                      <td class="px-4 py-4 text-slate-300">SG</td>
+                      <td class="px-4 py-4 text-slate-500">-</td>
+                      <td class="px-4 py-4 text-slate-300">5m 16s</td>
+                      <td class="px-4 py-4 text-slate-300">2026-04-27 16:06:21</td>
+                      <td class="px-4 py-4 text-slate-300">false</td>
+                      <td class="px-4 py-4 text-slate-300">All</td>
+                      <td class="px-4 py-4 text-slate-300">Build&amp;Deploy</td>
+                      <td class="px-4 py-4 text-slate-300">nebula-pipeline-starlight-uat</td>
+                      <td class="px-4 py-4"><div class="flex items-center gap-2"><button data-open="pipeline-drawer" class="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10">View Pipeline</button></div></td>
+                    </tr>
+                    <tr class="transition hover:bg-white/[0.03]">
+                      <td class="px-4 py-4"><span class="inline-flex rounded-md border px-2 py-1 text-xs font-semibold status-failure">FAILURE</span></td>
+                      <td class="px-4 py-4"><span class="inline-flex rounded-md border border-fuchsia-400/35 bg-fuchsia-400/10 px-2 py-1 text-xs text-fuchsia-200">UAT</span></td>
+                      <td class="px-4 py-4"><div class="flex items-center gap-2"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-blue-500/25 text-xs font-semibold text-blue-200">J</span><span class="text-slate-300">junrui wang</span></div></td>
+                      <td class="px-4 py-4"><div class="space-y-1"><div class="flex gap-2"><span class="pill rounded px-1.5 py-0.5 text-[11px] text-slate-400">Branch</span><span>origin/main</span></div><div class="flex gap-2"><span class="pill rounded px-1.5 py-0.5 text-[11px] text-slate-400">Commit</span><span>b44f278f</span></div><button class="text-blue-300 transition hover:text-blue-200">Diff</button></div></td>
+                      <td class="px-4 py-4 text-slate-300">SG</td>
+                      <td class="px-4 py-4 text-slate-500">-</td>
+                      <td class="px-4 py-4 text-slate-300">32s</td>
+                      <td class="px-4 py-4 text-slate-300">2026-04-21 18:32:53</td>
+                      <td class="px-4 py-4 text-slate-300">false</td>
+                      <td class="px-4 py-4 text-slate-300">All</td>
+                      <td class="px-4 py-4 text-slate-300">Build&amp;Deploy</td>
+                      <td class="px-4 py-4 text-slate-300">nebula-pipeline-starlight-uat</td>
+                      <td class="px-4 py-4"><div class="flex items-center gap-2"><button data-open="pipeline-drawer" class="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10">View Pipeline</button></div></td>
+                    </tr>
+                    <tr class="transition hover:bg-white/[0.03]">
+                      <td class="px-4 py-4"><span class="inline-flex rounded-md border px-2 py-1 text-xs font-semibold status-failure">FAILURE</span></td>
+                      <td class="px-4 py-4"><span class="inline-flex rounded-md border border-fuchsia-400/35 bg-fuchsia-400/10 px-2 py-1 text-xs text-fuchsia-200">UAT</span></td>
+                      <td class="px-4 py-4"><div class="flex items-center gap-2"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-blue-500/25 text-xs font-semibold text-blue-200">J</span><span class="text-slate-300">junrui wang</span></div></td>
+                      <td class="px-4 py-4"><div class="space-y-1"><div class="flex gap-2"><span class="pill rounded px-1.5 py-0.5 text-[11px] text-slate-400">Branch</span><span>origin/main</span></div><div class="flex gap-2"><span class="pill rounded px-1.5 py-0.5 text-[11px] text-slate-400">Commit</span><span>b44f278f</span></div><button class="text-blue-300 transition hover:text-blue-200">Diff</button></div></td>
+                      <td class="px-4 py-4 text-slate-300">SG</td>
+                      <td class="px-4 py-4 text-slate-500">-</td>
+                      <td class="px-4 py-4 text-slate-300">28s</td>
+                      <td class="px-4 py-4 text-slate-300">2026-04-21 18:26:19</td>
+                      <td class="px-4 py-4 text-slate-300">false</td>
+                      <td class="px-4 py-4 text-slate-300">All</td>
+                      <td class="px-4 py-4 text-slate-300">Build&amp;Deploy</td>
+                      <td class="px-4 py-4 text-slate-300">nebula-pipeline-starlight-uat</td>
+                      <td class="px-4 py-4"><div class="flex items-center gap-2"><button data-open="pipeline-drawer" class="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10">View Pipeline</button></div></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="tab-deployment-plan" class="tab-panel hidden space-y-5 px-5 py-5">
+          <div id="plan-group" class="plan-panel panel rounded-2xl p-5">
+            <div class="mb-5 flex items-center justify-between">
+              <h2 class="text-xl font-semibold text-white">Group Deployment</h2>
+              <button class="rounded-xl bg-[linear-gradient(180deg,#3b82f6,#2f6fed)] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(47,111,237,.35)] transition hover:brightness-110">＋ Create Group</button>
+            </div>
+
+            <div class="overflow-hidden rounded-2xl border border-white/10">
+              <div class="overflow-x-auto">
+                <table class="min-w-[1100px] w-full text-left text-sm">
+                  <thead class="bg-white/[0.04] text-slate-400">
+                    <tr>
+                      <th class="px-4 py-3 font-medium">Group Name</th>
+                      <th class="px-4 py-3 font-medium">Group Type</th>
+                      <th class="px-4 py-3 font-medium">Primary Service</th>
+                      <th class="px-4 py-3 font-medium">Created By</th>
+                      <th class="px-4 py-3 font-medium">Created Time</th>
+                      <th class="px-4 py-3 font-medium">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-white/8">
+                    <tr class="transition hover:bg-white/[0.03]">
+                      <td class="px-4 py-4 text-slate-200">1</td>
+                      <td class="px-4 py-4"><span class="inline-flex rounded-md border border-blue-400/35 bg-blue-500/10 px-2 py-1 text-xs text-blue-200">Created</span></td>
+                      <td class="px-4 py-4 text-blue-300">orion.release.mesh.gateway</td>
+                      <td class="px-4 py-4 text-slate-300">junrui wang</td>
+                      <td class="px-4 py-4 text-slate-300">2023-08-23 18:15:16</td>
+                      <td class="px-4 py-4">
+                        <div class="flex items-center gap-4 text-sm">
+                          <button class="text-blue-300 transition hover:text-blue-200">Bulk Run</button>
+                          <button data-open="group-drawer" class="text-blue-300 transition hover:text-blue-200">View</button>
+                          <button class="text-blue-300 transition hover:text-blue-200">More ▾</button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="transition hover:bg-white/[0.03]">
+                      <td class="px-4 py-4 text-slate-200">grouptest</td>
+                      <td class="px-4 py-4"><span class="inline-flex rounded-md border border-blue-400/35 bg-blue-500/10 px-2 py-1 text-xs text-blue-200">Created</span></td>
+                      <td class="px-4 py-4 text-blue-300">atlas.runtime.deploy.core</td>
+                      <td class="px-4 py-4 text-slate-300">junrui wang</td>
+                      <td class="px-4 py-4 text-slate-300">2023-10-16 11:13:52</td>
+                      <td class="px-4 py-4"><div class="flex items-center gap-4 text-sm"><button class="text-blue-300 transition hover:text-blue-200">Bulk Run</button><button data-open="group-drawer" class="text-blue-300 transition hover:text-blue-200">View</button><button class="text-blue-300 transition hover:text-blue-200">More ▾</button></div></td>
+                    </tr>
+                    <tr class="transition hover:bg-white/[0.03]">
+                      <td class="px-4 py-4 text-slate-200">junruitest</td>
+                      <td class="px-4 py-4"><span class="inline-flex rounded-md border border-blue-400/35 bg-blue-500/10 px-2 py-1 text-xs text-blue-200">Created</span></td>
+                      <td class="px-4 py-4 text-blue-300">comet.pipeline.scheduler.lab</td>
+                      <td class="px-4 py-4 text-slate-300">junrui wang</td>
+                      <td class="px-4 py-4 text-slate-300">2024-10-14 10:32:48</td>
+                      <td class="px-4 py-4"><div class="flex items-center gap-4 text-sm"><button class="text-blue-300 transition hover:text-blue-200">Bulk Run</button><button data-open="group-drawer" class="text-blue-300 transition hover:text-blue-200">View</button><button class="text-blue-300 transition hover:text-blue-200">More ▾</button></div></td>
+                    </tr>
+                    <tr class="transition hover:bg-white/[0.03]">
+                      <td class="px-4 py-4 text-slate-200">111</td>
+                      <td class="px-4 py-4"><span class="inline-flex rounded-md border border-blue-400/35 bg-blue-500/10 px-2 py-1 text-xs text-blue-200">Created</span></td>
+                      <td class="px-4 py-4 text-blue-300">nova.delivery.region.bridge</td>
+                      <td class="px-4 py-4 text-slate-300">junrui wang</td>
+                      <td class="px-4 py-4 text-slate-300">2026-02-05 14:21:08</td>
+                      <td class="px-4 py-4"><div class="flex items-center gap-4 text-sm"><button class="text-blue-300 transition hover:text-blue-200">Bulk Run</button><button data-open="group-drawer" class="text-blue-300 transition hover:text-blue-200">View</button><button class="text-blue-300 transition hover:text-blue-200">More ▾</button></div></td>
+                    </tr>
+                    <tr class="transition hover:bg-white/[0.03]">
+                      <td class="px-4 py-4 text-slate-200">janaes1</td>
+                      <td class="px-4 py-4"><span class="inline-flex rounded-md border border-lime-400/35 bg-lime-500/10 px-2 py-1 text-xs text-lime-200">Joined</span></td>
+                      <td class="px-4 py-4 text-blue-300">vector.ci.traffic.switcher</td>
+                      <td class="px-4 py-4 text-slate-300">junrui wang</td>
+                      <td class="px-4 py-4 text-slate-300">2023-01-28 11:27:26</td>
+                      <td class="px-4 py-4"><div class="flex items-center gap-4 text-sm"><button class="text-blue-300 transition hover:text-blue-200">Bulk Run</button><button data-open="group-drawer" class="text-blue-300 transition hover:text-blue-200">View</button><button class="text-blue-300 transition hover:text-blue-200">More ▾</button></div></td>
+                    </tr>
+                    <tr class="transition hover:bg-white/[0.03]">
+                      <td class="px-4 py-4 text-slate-200">Multi serial group deployment</td>
+                      <td class="px-4 py-4"><span class="inline-flex rounded-md border border-lime-400/35 bg-lime-500/10 px-2 py-1 text-xs text-lime-200">Joined</span></td>
+                      <td class="px-4 py-4 text-blue-300">aurora.batch.orchestrator</td>
+                      <td class="px-4 py-4 text-slate-300">junrui wang</td>
+                      <td class="px-4 py-4 text-slate-300">2023-03-13 12:00:39</td>
+                      <td class="px-4 py-4"><div class="flex items-center gap-4 text-sm"><button class="text-blue-300 transition hover:text-blue-200">Bulk Run</button><button data-open="group-drawer" class="text-blue-300 transition hover:text-blue-200">View</button><button class="text-blue-300 transition hover:text-blue-200">More ▾</button></div></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="mt-4 flex items-center justify-end gap-4 text-sm text-slate-400">
+              <span>Total <strong class="text-slate-200">6</strong> items</span>
+              <div class="flex items-center gap-2">
+                <button class="rounded-lg border border-blue-400/35 bg-blue-500/10 px-2.5 py-1.5 text-blue-200">1</button>
+                <button class="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-slate-400">›</button>
+                <button class="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-slate-300">10 / page ▾</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="plan-canary" class="plan-panel hidden panel rounded-2xl p-10 text-center text-slate-400">
+            Canary Deployment 本轮不实现，仅保留 tab 占位以保持信息架构一致。
+          </div>
+        </section>
+    </main>
+  </div>
+
+  <div id="overlay" class="fixed inset-0 z-40 bg-[#020617]/70 opacity-0 pointer-events-none transition duration-200"></div>
+
+  <div id="run-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition duration-200">
+    <div class="w-full max-w-4xl rounded-3xl border border-white/10 bg-[linear-gradient(180deg,#101826,#0a1220)] shadow-[0_24px_80px_rgba(0,0,0,.55)]">
+      <div class="flex items-center justify-between border-b border-white/10 px-6 py-5">
+        <h3 class="text-xl font-semibold text-white">Run pipeline for service nebula.engineering_infra.dev_efficiency.cicd.pipeline.starlight</h3>
+        <button data-close class="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-slate-300 transition hover:bg-white/10">✕</button>
+      </div>
+      <div class="grid gap-0 lg:grid-cols-[180px_1fr]">
+        <div class="border-r border-white/10 bg-black/10 px-4 py-5">
+          <button class="block w-full rounded-xl bg-blue-500/15 px-4 py-3 text-left text-sm font-medium text-white">Basic Settings</button>
+          <button class="mt-2 block w-full rounded-xl px-4 py-3 text-left text-sm text-slate-400 transition hover:bg-white/5 hover:text-slate-200">Custom Parameters</button>
+          <button class="mt-2 block w-full rounded-xl px-4 py-3 text-left text-sm text-slate-400 transition hover:bg-white/5 hover:text-slate-200">Advanced Parameters</button>
+        </div>
+        <div class="space-y-5 px-6 py-5">
+          <div class="rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4 text-sm leading-6 text-amber-100/85">
+            There is tickets available for release. Please visit Release Ticket to deploy from available tickets or raise a new ticket here.
+            <button class="ml-2 text-blue-300 transition hover:text-blue-200">View Release Ticket</button>
+          </div>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="space-y-2 sm:col-span-2">
+              <span class="text-sm text-slate-400">ENV</span>
+              <button class="flex h-11 w-full items-center justify-between rounded-xl border border-white/10 bg-slate-950/70 px-4 text-sm text-slate-200"><span>TEST</span><span>⌄</span></button>
+            </label>
+            <div class="space-y-2 sm:col-span-2">
+              <span class="text-sm text-slate-400">OPTIONS</span>
+              <div class="flex flex-wrap gap-4">
+                <button class="toggle-on inline-flex items-center gap-3 rounded-full border px-3 py-1.5 text-sm text-slate-200"><span>CANARY</span><span class="relative block h-5 w-11 rounded-full bg-white/20"><span class="toggle-dot absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white"></span></span></button>
+                <button class="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300"><span>BUILD_ONLY</span><span class="relative block h-5 w-11 rounded-full bg-white/10"><span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white/80"></span></span></button>
+                <button class="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-300"><span>DEPLOY_ONLY</span><span class="relative block h-5 w-11 rounded-full bg-white/10"><span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white/80"></span></span></button>
+              </div>
+            </div>
+            <label class="space-y-2 sm:col-span-2">
+              <span class="text-sm text-slate-400">DEPLOY_CIDS</span>
+              <div class="flex min-h-11 flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm">
+                <span class="rounded-lg bg-white/10 px-2 py-1 text-slate-200">SG ×</span>
+                <span class="rounded-lg bg-white/10 px-2 py-1 text-slate-200">FR ×</span>
+              </div>
+            </label>
+            <label class="space-y-2 sm:col-span-2">
+              <span class="text-sm text-slate-400">SOURCE_TYPE</span>
+              <button class="flex h-11 w-full items-center justify-between rounded-xl border border-white/10 bg-slate-950/70 px-4 text-sm text-slate-200"><span>FROM_BRANCH/TAG</span><span>⌄</span></button>
+            </label>
+            <label class="space-y-2 sm:col-span-2">
+              <span class="text-sm text-slate-400">FROM_BRANCH/TAG</span>
+              <div class="grid gap-3 sm:grid-cols-[1fr_120px_44px]">
+                <input value="origin/master" class="h-11 rounded-xl border border-white/10 bg-slate-950/70 px-4 text-sm text-slate-200 outline-none" />
+                <button class="rounded-xl border border-white/10 bg-white/5 text-sm text-slate-200">BRANCH</button>
+                <button class="rounded-xl border border-white/10 bg-white/5 text-sm text-slate-300">⟳</button>
+              </div>
+              <div class="space-y-1 text-sm">
+                <p class="text-slate-400">Commit ID: d27af1da</p>
+                <p class="text-slate-400">Commit Msg: Update README.md</p>
+                <p class="text-amber-300">The same commit has been built &amp; deployed before. If a rollback is needed, try to use DEPLOY_ONLY.</p>
+              </div>
+            </label>
+            <label class="space-y-2">
+              <span class="text-sm text-slate-400">Artifact Name Prefix</span>
+              <input placeholder="Please input your preferred prefix for the artifact" class="h-11 w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 text-sm text-slate-200 outline-none placeholder:text-slate-500" />
+            </label>
+            <label class="space-y-2">
+              <span class="text-sm text-slate-400">Release Content</span>
+              <input placeholder="please input release content" class="h-11 w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 text-sm text-slate-200 outline-none placeholder:text-slate-500" />
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 border-t border-white/10 px-6 py-4">
+        <button data-close class="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-slate-300 transition hover:bg-white/10">Cancel</button>
+        <button class="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-slate-200 transition hover:bg-white/10">View Diff</button>
+        <button class="rounded-xl bg-[linear-gradient(180deg,#3b82f6,#2f6fed)] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110">Create Ticket</button>
+      </div>
+    </div>
+  </div>
+
+  <aside id="pipeline-drawer" class="fixed right-0 top-0 z-50 h-full w-full max-w-[1180px] translate-x-full border-l border-white/10 bg-[linear-gradient(180deg,#0d1525,#09111d)] shadow-[0_24px_80px_rgba(0,0,0,.55)] transition duration-300">
+    <div class="flex h-full flex-col">
+      <div class="flex items-center gap-4 border-b border-white/10 px-5 py-4">
+        <button data-close class="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-lg text-slate-300">←</button>
+        <div class="min-w-0 flex-1">
+          <h3 class="truncate text-2xl font-semibold text-white">nebula.engineering_infra.dev_efficiency.cicd.pipeline.starlight</h3>
+          <p class="text-sm text-slate-400">Pipeline Details</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <button class="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300">Deploy</button>
+          <button class="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300">Rerun</button>
+          <button class="rounded-lg bg-[linear-gradient(180deg,#3b82f6,#2f6fed)] px-4 py-2 text-sm font-semibold text-white">Reload</button>
+        </div>
+      </div>
+
+      <div class="overflow-y-auto px-5 py-5">
+        <div class="mb-6 flex items-center justify-between gap-4">
+          <div class="text-lg font-semibold text-white">Pipeline Details</div>
+          <div class="flex items-center gap-3">
+            <div class="h-2 w-64 rounded-full bg-white/10">
+              <div class="h-2 w-full rounded-full bg-[linear-gradient(90deg,#2f6fed,#69a3ff)]"></div>
+            </div>
+            <span class="text-sm text-slate-300">100%</span>
+          </div>
+        </div>
+
+        <div class="grid gap-4 xl:grid-cols-7">
+          <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+            <p class="font-semibold text-white">① Setup</p><p class="text-sm text-slate-400">4s</p><span class="mt-2 inline-flex rounded-md border border-lime-400/35 bg-lime-500/10 px-2 py-1 text-xs text-lime-200">Finished</span>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+            <p class="font-semibold text-white">② Info</p><p class="text-sm text-slate-400">4s</p><span class="mt-2 inline-flex rounded-md border border-lime-400/35 bg-lime-500/10 px-2 py-1 text-xs text-lime-200">Finished</span>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+            <p class="font-semibold text-white">③ Install</p><p class="text-sm text-slate-400">1s</p><span class="mt-2 inline-flex rounded-md border border-lime-400/35 bg-lime-500/10 px-2 py-1 text-xs text-lime-200">Finished</span>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+            <p class="font-semibold text-white">④ Build (Base)</p><p class="text-sm text-slate-400">10s</p><span class="mt-2 inline-flex rounded-md border border-lime-400/35 bg-lime-500/10 px-2 py-1 text-xs text-lime-200">Finished</span>
+          </div>
+          <div class="rounded-2xl border border-blue-400/40 bg-blue-500/10 p-4 text-center shadow-glow">
+            <p class="font-semibold text-white">⑤ Build (Region)</p><p class="text-sm text-slate-300">2s</p><span class="mt-2 inline-flex rounded-md border border-lime-400/35 bg-lime-500/10 px-2 py-1 text-xs text-lime-200">Finished</span>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+            <p class="font-semibold text-white">⑥ Push</p><p class="text-sm text-slate-400">20s</p><span class="mt-2 inline-flex rounded-md border border-lime-400/35 bg-lime-500/10 px-2 py-1 text-xs text-lime-200">Finished</span>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+            <p class="font-semibold text-blue-300">⑦ Deploy</p><p class="text-sm text-slate-400">5d 21h 30m 53s</p><span class="mt-2 inline-flex rounded-md border border-rose-400/35 bg-rose-500/10 px-2 py-1 text-xs text-rose-200">Aborted</span>
+          </div>
+        </div>
+
+        <div class="mt-6 flex gap-2 border-b border-white/10 pb-3">
+          <button data-detail-tab="detail" class="detail-tab tab-active rounded-xl border border-white/10 px-4 py-2 text-sm">Detail Info</button>
+          <button data-detail-tab="log" class="detail-tab rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300">Log</button>
+        </div>
+
+        <div id="detail-panel-detail" class="detail-panel mt-5 space-y-5">
+          <div>
+            <h4 class="text-2xl font-semibold text-white">Build (Region)</h4>
+            <div class="mt-4 rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4 text-sm text-amber-100/85">Aborted by songli.wang@shopee.com at 2026-04-27 16:05:56</div>
+          </div>
+          <div class="panel rounded-2xl p-5">
+            <h5 class="mb-4 text-lg font-semibold text-white">Artifact (Region)</h5>
+            <div class="overflow-hidden rounded-xl border border-white/10">
+              <table class="w-full text-left text-sm">
+                <thead class="bg-white/[0.04] text-slate-400">
+                  <tr><th class="px-4 py-3 font-medium">Image Name</th><th class="px-4 py-3 font-medium">CID</th><th class="px-4 py-3 font-medium">Tag</th><th class="px-4 py-3 font-medium">Digest</th></tr>
+                </thead>
+                <tbody>
+                  <tr class="border-t border-white/8">
+                    <td class="px-4 py-4 text-slate-200">harbor.gisc.sg/gisc/pipeline-pipelinetest-uat-sg</td>
+                    <td class="px-4 py-4 text-slate-300">SG</td>
+                    <td class="px-4 py-4 text-slate-300">b44f278fa7ab_1315</td>
+                    <td class="px-4 py-4 text-slate-300">sha256:ca99c9d9e9f7bfdaabe50e7aed97396fd9c6595fa315820f770fcc99f41b0228</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel rounded-2xl p-5">
+            <h5 class="mb-3 text-lg font-semibold text-white">Build Info (Region)</h5>
+            <p class="mb-2 text-sm text-slate-400">Build commands</p>
+            <div class="overflow-hidden rounded-xl border border-white/10 bg-[#050b16] font-mono text-sm">
+              <div class="px-4 py-3 text-amber-300"><span class="text-orange-400">echo</span> aaaa</div>
+              <div class="border-t border-white/5 px-4 py-3 text-slate-500">$</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="detail-panel-log" class="detail-panel hidden mt-5 panel rounded-2xl p-5 font-mono text-sm leading-7 text-slate-300">
+          [16:05:11] fetching build manifest<br />
+          [16:05:15] resolving region artifact<br />
+          [16:05:18] push finished<br />
+          [16:05:56] deployment aborted by operator
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <aside id="group-drawer" class="fixed right-0 top-0 z-50 h-full w-full max-w-[1120px] translate-x-full border-l border-white/10 bg-[linear-gradient(180deg,#0d1525,#09111d)] shadow-[0_24px_80px_rgba(0,0,0,.55)] transition duration-300">
+    <div class="flex h-full flex-col">
+      <div class="flex items-center gap-4 border-b border-white/10 px-5 py-4">
+        <button data-close class="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-lg text-slate-300">←</button>
+        <div class="min-w-0 flex-1">
+          <h3 class="truncate text-2xl font-semibold text-white">nebula.engineering_infra.dev_efficiency.cicd.pipeline.starlight / Group Detail / Multi serial group deployment</h3>
+          <p class="text-sm text-slate-400">Pipeline</p>
+        </div>
+      </div>
+
+      <div class="overflow-y-auto px-5 py-5">
+        <div class="mb-4 flex gap-2 border-b border-white/10 pb-3">
+          <button class="tab-active rounded-xl border border-white/10 px-4 py-2 text-sm">Pipeline</button>
+        </div>
+        <div class="mb-5 flex gap-2">
+          <button class="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300">Group Run History</button>
+          <button class="tab-active rounded-xl border border-white/10 px-4 py-2 text-sm">Layout</button>
+        </div>
+
+        <div class="mb-6 flex items-center justify-between">
+          <h4 class="text-2xl font-semibold text-white">Layout Detail</h4>
+          <div class="flex items-center gap-3">
+            <button class="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300">Edit</button>
+            <button class="rounded-lg bg-[linear-gradient(180deg,#3b82f6,#2f6fed)] px-4 py-2 text-sm font-semibold text-white">Bulk Run</button>
+          </div>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div><p class="text-sm text-slate-500">Group Name</p><p class="mt-2 text-slate-200">Multi serial group deployment</p></div>
+          <div><p class="text-sm text-slate-500">Description</p><p class="mt-2 text-slate-400">-</p></div>
+          <div class="sm:col-span-2"><p class="text-sm text-slate-500">Common Parameters</p><div class="mt-2 flex flex-wrap gap-4 text-sm text-slate-300"><span class="inline-flex items-center gap-2">CANARY <span class="inline-block h-5 w-11 rounded-full bg-white/10 align-middle"></span></span><span class="inline-flex items-center gap-2">BUILD_ONLY <span class="inline-block h-5 w-11 rounded-full bg-white/10 align-middle"></span></span><span class="inline-flex items-center gap-2">DEPLOY_ONLY <span class="inline-block h-5 w-11 rounded-full bg-white/10 align-middle"></span></span></div></div>
+        </div>
+
+        <div class="mt-8 panel rounded-3xl p-6">
+          <div class="overflow-x-auto">
+            <div class="flex min-w-[980px] items-center gap-8 py-8">
+              <div class="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-medium text-slate-200">Start</div>
+              <div class="h-px w-16 bg-white/10"></div>
+
+              <div class="w-72 rounded-3xl border border-white/10 bg-white/[0.03] p-5 shadow-[0_14px_34px_rgba(0,0,0,.16)]">
+                <p class="mb-4 text-sm font-semibold text-slate-300">Serial 01</p>
+                <div class="space-y-3">
+                  <div class="rounded-xl border border-violet-400/30 bg-violet-500/10 px-4 py-3 text-sm text-violet-200">services_for_test_rename.cd_api</div>
+                  <div class="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-blue-200">dev_efficiency.tangying_test</div>
+                  <div class="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-blue-200">pipeline.engine_3a</div>
+                </div>
+              </div>
+
+              <div class="h-px w-16 bg-white/10"></div>
+
+              <div class="w-72 rounded-3xl border border-white/10 bg-white/[0.03] p-5 shadow-[0_14px_34px_rgba(0,0,0,.16)]">
+                <p class="mb-4 text-sm font-semibold text-slate-300">Serial 02</p>
+                <div class="space-y-3">
+                  <div class="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-blue-200">pipeline.pipelinetest</div>
+                  <div class="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-blue-200">trigger.timer_trigger</div>
+                </div>
+              </div>
+
+              <div class="h-px w-16 bg-white/10"></div>
+
+              <div class="w-72 rounded-3xl border border-white/10 bg-white/[0.03] p-5 shadow-[0_14px_34px_rgba(0,0,0,.16)]">
+                <p class="mb-4 text-sm font-semibold text-slate-300">Serial 03</p>
+                <div class="space-y-3">
+                  <div class="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-blue-200">sdptest.pipelinetest</div>
+                </div>
+              </div>
+
+              <div class="h-px w-16 bg-white/10"></div>
+              <div class="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-medium text-slate-200">End</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <script>
+    const mainTabs = document.querySelectorAll('.main-tab');
+    const tabPanels = {
+      overview: document.getElementById('tab-overview'),
+      'deployment-plan': document.getElementById('tab-deployment-plan'),
     };
 
-    function PipelinePanel({ activeStageIndex }) {
-      return (
-        <section className="mb-8 rounded-xl border border-slate-800 bg-slate-900/80 p-4 sm:p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Pipeline
-            </h2>
-            <span className="font-mono text-[10px] text-slate-600">Build → Ship</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 sm:gap-0">
-            {PIPELINE_STAGES.map((stage, i) => (
-              <div key={stage.id} className="flex items-center">
-                <div
-                  className={[
-                    'flex min-w-[5.5rem] flex-col items-center rounded-lg border px-3 py-2.5 transition-all duration-300 sm:min-w-[6.5rem]',
-                    activeStageIndex === i
-                      ? 'stage-active border-blue-500/80 bg-blue-950/60 text-blue-100'
-                      : activeStageIndex >= 0 && i < activeStageIndex
-                        ? 'border-emerald-800/80 bg-emerald-950/40 text-emerald-200'
-                        : 'border-slate-700 bg-slate-950/80 text-slate-400',
-                  ].join(' ')}
-                >
-                  <span className="font-mono text-[10px] text-slate-500">stage {i + 1}</span>
-                  <span className="mt-0.5 font-mono text-xs font-medium">{stage.label}</span>
-                </div>
-                {i < PIPELINE_STAGES.length - 1 && (
-                  <div
-                    className={[
-                      'mx-1 hidden h-px w-6 sm:mx-2 sm:block',
-                      i < activeStageIndex ? 'bg-emerald-600' : 'bg-slate-700',
-                    ].join(' ')}
-                    aria-hidden
-                  />
-                )}
-                {i < PIPELINE_STAGES.length - 1 && (
-                  <span className="mx-1 font-mono text-slate-600 sm:hidden">→</span>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      );
+    mainTabs.forEach((button) => {
+      button.addEventListener('click', () => {
+        mainTabs.forEach((item) => item.classList.remove('tab-active'));
+        Object.values(tabPanels).forEach((panel) => panel.classList.add('hidden'));
+        button.classList.add('tab-active');
+        tabPanels[button.dataset.mainTab].classList.remove('hidden');
+      });
+    });
+
+    const planTabs = document.querySelectorAll('.plan-tab');
+    const planPanels = {
+      group: document.getElementById('plan-group'),
+      canary: document.getElementById('plan-canary'),
+    };
+
+    planTabs.forEach((button) => {
+      button.addEventListener('click', () => {
+        planTabs.forEach((item) => item.classList.remove('tab-active'));
+        Object.values(planPanels).forEach((panel) => panel.classList.add('hidden'));
+        button.classList.add('tab-active');
+        planPanels[button.dataset.planTab].classList.remove('hidden');
+      });
+    });
+
+    const detailTabs = document.querySelectorAll('.detail-tab');
+    const detailPanels = {
+      detail: document.getElementById('detail-panel-detail'),
+      log: document.getElementById('detail-panel-log'),
+    };
+
+    detailTabs.forEach((button) => {
+      button.addEventListener('click', () => {
+        detailTabs.forEach((item) => item.classList.remove('tab-active'));
+        detailTabs.forEach((item) => item.classList.add('bg-white/5', 'text-slate-300'));
+        button.classList.add('tab-active');
+        button.classList.remove('bg-white/5', 'text-slate-300');
+        Object.values(detailPanels).forEach((panel) => panel.classList.add('hidden'));
+        detailPanels[button.dataset.detailTab].classList.remove('hidden');
+      });
+    });
+
+    const overlay = document.getElementById('overlay');
+    const runModal = document.getElementById('run-modal');
+    const pipelineDrawer = document.getElementById('pipeline-drawer');
+    const groupDrawer = document.getElementById('group-drawer');
+
+    function closeAll() {
+      overlay.classList.remove('overlay-open');
+      overlay.classList.add('opacity-0', 'pointer-events-none');
+      runModal.classList.remove('modal-open');
+      runModal.classList.add('opacity-0', 'pointer-events-none');
+      pipelineDrawer.classList.remove('drawer-open');
+      groupDrawer.classList.remove('drawer-open');
+      document.body.classList.remove('overflow-hidden');
     }
 
-    function EnvBoard({ env, onChange }) {
-      const keys = Object.keys(ENV_CONFIG);
-      return (
-        <section className="mb-8 rounded-xl border border-slate-800 bg-slate-900/80 p-4 sm:p-6">
-          <h2 className="mb-3 font-mono text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-            Environment
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {keys.map((k) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => onChange(k)}
-                className={[
-                  'rounded-lg border px-3 py-2 font-mono text-xs transition',
-                  env === k
-                    ? 'border-violet-500/80 bg-violet-950/50 text-violet-100'
-                    : 'border-slate-700 bg-slate-950 text-slate-400 hover:border-slate-500',
-                ].join(' ')}
-              >
-                {ENV_CONFIG[k].label}
-              </button>
-            ))}
-          </div>
-        </section>
-      );
+    function openSurface(id) {
+      overlay.classList.add('overlay-open');
+      overlay.classList.remove('opacity-0', 'pointer-events-none');
+      document.body.classList.add('overflow-hidden');
+      if (id === 'run-modal') {
+        runModal.classList.add('modal-open');
+        runModal.classList.remove('opacity-0', 'pointer-events-none');
+      }
+      if (id === 'pipeline-drawer') pipelineDrawer.classList.add('drawer-open');
+      if (id === 'group-drawer') groupDrawer.classList.add('drawer-open');
     }
 
-    function GroupDeployPanel({
-      progress,
-      deployStatus,
-      onExecute,
-      disabled,
-    }) {
-      return (
-        <section className="mb-8 rounded-xl border border-slate-800 bg-slate-900/80 p-4 sm:p-6">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Group deployment
-            </h2>
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={onExecute}
-              className="rounded-lg border border-blue-600/60 bg-blue-950/50 px-4 py-2 font-mono text-xs font-medium uppercase tracking-wider text-blue-100 transition hover:bg-blue-900/60 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Execute Group Deploy
-            </button>
-          </div>
-          <ul className="space-y-4">
-            {SERVICES.map((s) => (
-              <li key={s.id}>
-                <div className="mb-1 flex justify-between font-mono text-xs">
-                  <span className="text-slate-300">{s.name}</span>
-                  <span className="text-slate-500">tier {s.tier}</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded bg-slate-800">
-                  <div
-                    className={[
-                      'h-full rounded transition-[width] duration-100 ease-linear',
-                      s.id === 'auth' ? 'bg-gradient-to-r from-blue-600 to-cyan-500' : 'bg-gradient-to-r from-violet-600 to-fuchsia-500',
-                    ].join(' ')}
-                    style={{ width: `${progress[s.id]}%` }}
-                  />
-                </div>
-                <p className="mt-0.5 text-right font-mono text-[10px] tabular-nums text-slate-500">
-                  {Math.round(progress[s.id])}%
-                </p>
-              </li>
-            ))}
-          </ul>
-          {deployStatus === 'done' && (
-            <p className="mt-4 font-mono text-xs text-emerald-400/90">Group deploy finished · all targets healthy.</p>
-          )}
-        </section>
-      );
-    }
+    document.querySelectorAll('[data-open]').forEach((button) => {
+      button.addEventListener('click', () => openSurface(button.dataset.open));
+    });
 
-    function LogPanel({ lines }) {
-      const endRef = useRef(null);
-      useEffect(() => {
-        endRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, [lines]);
+    document.querySelectorAll('[data-close]').forEach((button) => {
+      button.addEventListener('click', closeAll);
+    });
 
-      return (
-        <section className="rounded-xl border border-slate-800 bg-black/50 p-4 sm:p-6">
-          <h2 className="mb-3 font-mono text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-            Event log
-          </h2>
-          <div className="max-h-56 overflow-y-auto font-mono text-[11px] leading-relaxed text-slate-400 sm:text-xs">
-            {lines.length === 0 && <p className="text-slate-600">// No events yet.</p>}
-            {lines.map((line, i) => (
-              <div key={i} className="border-b border-slate-800/50 py-1 last:border-0">
-                {line}
-              </div>
-            ))}
-            <div ref={endRef} />
-          </div>
-        </section>
-      );
-    }
-
-    function App() {
-      const [env, setEnv] = useState('production');
-      const [logs, setLogs] = useState([]);
-      const [pipelineStage, setPipelineStage] = useState(-1);
-      const [progress, setProgress] = useState({ auth: 0, payment: 0, order: 0 });
-      const [deployStatus, setDeployStatus] = useState('idle');
-      const timersRef = useRef([]);
-
-      const pushLog = useCallback((msg) => {
-        const ts = new Date().toISOString().split('T')[1].replace('Z', '').slice(0, 12);
-        setLogs((prev) => [...prev, `[${ts}] ${msg}`]);
-      }, []);
-
-      const clearTimers = () => {
-        timersRef.current.forEach(clearTimeout);
-        timersRef.current = [];
-      };
-
-      useEffect(() => () => clearTimers(), []);
-
-      const handleEnvChange = (next) => {
-        setEnv(next);
-        const cfg = ENV_CONFIG[next];
-        pushLog(`Environment → ${cfg.label}`);
-        cfg.lines.forEach((line, i) => {
-          timersRef.current.push(
-            setTimeout(() => pushLog(`  · ${line}`), 80 * (i + 1)),
-          );
-        });
-      };
-
-      const runPipelineSweep = () =>
-        new Promise((resolve) => {
-          let i = 0;
-          const step = () => {
-            setPipelineStage(i);
-            if (i >= PIPELINE_STAGES.length - 1) {
-              timersRef.current.push(setTimeout(resolve, 280));
-              return;
-            }
-            i += 1;
-            timersRef.current.push(setTimeout(step, 320));
-          };
-          step();
-        });
-
-      const animateProgress = (key, from, to, durationMs) =>
-        new Promise((resolve) => {
-          const start = performance.now();
-          const tick = (now) => {
-            const p = Math.min(1, (now - start) / durationMs);
-            const eased = 1 - Math.pow(1 - p, 2);
-            const val = from + (to - from) * eased;
-            setProgress((prev) => ({ ...prev, [key]: val }));
-            if (p < 1) requestAnimationFrame(tick);
-            else {
-              setProgress((prev) => ({ ...prev, [key]: to }));
-              resolve();
-            }
-          };
-          requestAnimationFrame(tick);
-        });
-
-      const handleGroupDeploy = async () => {
-        if (deployStatus === 'running') return;
-        clearTimers();
-        setDeployStatus('running');
-        setProgress({ auth: 0, payment: 0, order: 0 });
-        setPipelineStage(-1);
-
-        const envLabel = ENV_CONFIG[env].label;
-        pushLog(`── Group deploy requested · target=${envLabel} ──`);
-
-        await runPipelineSweep();
-        pushLog('Pipeline stages complete · scheduling service rollout…');
-
-        pushLog('Tier 1: Auth-Service (serial gate)');
-        await animateProgress('auth', 0, 100, 1400);
-        pushLog('Auth-Service · deploy OK · releasing tier-2 wave');
-
-        pushLog('Tier 2: Payment-Gateway & Order-Engine (parallel)');
-        await Promise.all([
-          animateProgress('payment', 0, 100, 1600),
-          animateProgress('order', 0, 100, 1550),
-        ]);
-
-        pushLog(`── Group deploy success · env=${envLabel} ──`);
-        setDeployStatus('done');
-        setPipelineStage(PIPELINE_STAGES.length);
-      };
-
-      useEffect(() => {
-        pushLog(`Space CI/CD · session · initial env=${ENV_CONFIG[env].label}`);
-      }, []);
-
-      return (
-        <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-          <header className="mb-10 border-b border-slate-800 pb-6">
-            <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-blue-400/80">Interactive demo</p>
-            <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
-              Space CI/CD Platform
-            </h1>
-            <p className="mt-2 max-w-xl text-sm text-slate-500">
-              Pipeline graph, ordered + concurrent group rollout, environment-scoped config stream.
-            </p>
-          </header>
-
-          <PipelinePanel activeStageIndex={pipelineStage} />
-
-          <EnvBoard env={env} onChange={handleEnvChange} />
-
-          <GroupDeployPanel
-            progress={progress}
-            deployStatus={deployStatus}
-            disabled={deployStatus === 'running'}
-            onExecute={handleGroupDeploy}
-          />
-
-          <LogPanel lines={logs} />
-        </div>
-      );
-    }
-
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
+    overlay.addEventListener('click', closeAll);
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeAll();
+    });
   </script>
 </body>
 </html>
-=======
-
->>>>>>> c585d0aaae9e42ef2fc1a513023150c8034390f5
